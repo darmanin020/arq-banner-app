@@ -468,8 +468,8 @@ export default function ARQBannerGenerator() {
       const logoW = Math.round(220 * S);
       const logoH = Math.round(logoW / (activeLogo.width / activeLogo.height));
 
-      if (selectedStyle === "bottomPhoto") {
-        // Bottom Photo: logo at top-RIGHT to leave left column free for text
+      if (selectedStyle === "bottomPhoto" || selectedStyle === "lightPattern") {
+        // Bottom Photo & Hex Pattern: logo at top-RIGHT to leave left column free for text
         const logoX = width - margin - logoW;
         const logoTopY = Math.round(48 * S);
         ctx.drawImage(activeLogo, logoX, logoTopY, logoW, logoH);
@@ -496,7 +496,7 @@ export default function ARQBannerGenerator() {
     if (selectedStyle === "bottomPhoto")  weAreYBase = 280;
     if (selectedStyle === "sideOverlay")  weAreYBase = 340;
     if (selectedStyle === "darkSplit")    weAreYBase = 340;
-    if (selectedStyle === "lightPattern") weAreYBase = 340;
+    if (selectedStyle === "lightPattern") weAreYBase = 120;
 
     const weAreY = Math.round(weAreYBase * S);
     ctx.fillText("We are", textX, weAreY);

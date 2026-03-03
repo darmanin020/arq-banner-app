@@ -341,7 +341,7 @@ export default function ARQBannerGenerator() {
       const logoW    = Math.round(220 * S);
       const logoH    = Math.round(logoW / (activeLogo.width / activeLogo.height));
       const logoTopY = selectedStyle === "fullBleed" ? height * 0.04 : Math.round(55 * S);
-      if (selectedStyle === "bottomPhoto") {
+      if (selectedStyle === "bottomPhoto" || selectedStyle === "lightPattern") {
         // Top-right so it doesn't overlap left-side text
         ctx.drawImage(activeLogo, width - margin - logoW, Math.round(48 * S), logoW, logoH);
       } else {
@@ -355,7 +355,7 @@ export default function ARQBannerGenerator() {
     ctx.font      = "700 " + weAreSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = textColor;
     ctx.textAlign = "left";
-    let weAreYBase = 340;
+    let weAreYBase = 380;
     if (selectedStyle === "fullBleed")    weAreYBase = 500;
     if (selectedStyle === "bottomPhoto")  weAreYBase = 145;
     if (selectedStyle === "sideOverlay")  weAreYBase = 300;
