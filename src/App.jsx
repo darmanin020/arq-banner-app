@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const LOGO_COLOR_SRC = "/arq-logo-colour.png.png";
-const LOGO_WHITE_SRC = "/arq-logo-white.png.png";
+useEffect(() => {
+  const loadImg = (src) => new Promise((res, rej) => {
+    const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src;
+  });
+  Promise.all([loadImg(LOGO_COLOR_SRC), loadImg(LOGO_WHITE_SRC)]).then(([colour, white]) => {
+    logoColorRef.current = colour; logoWhiteRef.current = white; setLogosReady(true);
+  });
+}, []);
 
 // ─── BRAND CONSTANTS ────────────────────────────────────────
 const BRAND = {
@@ -270,10 +276,9 @@ export default function ARQBannerGenerator() {
 
   const canvasRef   = useRef(null);
   const fileInputRef = useRef(null);
-  const [bgImage, setBgImage]         = useState(null);
-  const [logoImage, setLogoImage]     = useState(null);
-  const [logoWhite, setLogoWhite]     = useState(null);
-
+const [logosReady, setLogosReady] = useState(false);
+const logoColorRef = useRef(null);
+const logoWhiteRef = useRef(null);
   // Load Barlow font
   useEffect(() => {
     const link = document.createElement("link");
@@ -331,7 +336,7 @@ export default function ARQBannerGenerator() {
   // ── DRAW ─────────────────────────────────────────────────
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !fontsReady) return;
+if (!canvas || !fontsReady || !logosReady) return;
     const ctx = canvas.getContext("2d");
     const { width, height } = SIZES[selectedSize];
     canvas.width = width;
