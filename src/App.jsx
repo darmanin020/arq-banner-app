@@ -1,13 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-useEffect(() => {
-  const loadImg = (src) => new Promise((res, rej) => {
-    const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = src;
-  });
-  Promise.all([loadImg(LOGO_COLOR_SRC), loadImg(LOGO_WHITE_SRC)]).then(([colour, white]) => {
-    logoColorRef.current = colour; logoWhiteRef.current = white; setLogosReady(true);
-  });
-}, []);
+const LOGO_COLOR_SRC = "/arq-logo-colour.png.png";
+const LOGO_WHITE_SRC = "/arq-logo-white.png.png";
 
 // ─── BRAND CONSTANTS ────────────────────────────────────────
 const BRAND = {
@@ -21,37 +15,36 @@ const BRAND = {
 
 // ─── SIZE PRESETS ────────────────────────────────────────────
 const SIZES = {
-  instagram:        { width: 1080, height: 1350, label: "Instagram",         dimensions: "1080 × 1350", layout: "portrait" },
-  linkedin:         { width: 1080, height: 1080, label: "LinkedIn",          dimensions: "1080 × 1080", layout: "square"   },
-  facebook:         { width: 1080, height: 1080, label: "Facebook",          dimensions: "1080 × 1080", layout: "square"   },
+  instagram: { width: 1080, height: 1350, label: "Instagram", dimensions: "1080 × 1350", layout: "portrait" },
+  linkedin:  { width: 1080, height: 1080, label: "LinkedIn",  dimensions: "1080 × 1080", layout: "square"   },
+  facebook:  { width: 1080, height: 1080, label: "Facebook",  dimensions: "1080 × 1080", layout: "square"   },
 };
 
 // ─── STYLE VARIANTS ─────────────────────────────────────────
-// Each style = a different background treatment, matching the real ARQ posts
 const STYLES = {
   aquaBlob:     { label: "Aqua Blob",    description: "White bg · aqua blob top-right · curved panel", dark: false },
-  darkSplit:    { label: "Dark Split",   description: "Deep blue left panel · photo bleeds right",     dark: true  },
+  darkSplit:    { label: "Dark Split",   description: "Photo left · blue right · text on right side",   dark: true  },
   lightPattern: { label: "Hex Pattern",  description: "White bg · hex grid top · photo bottom",         dark: false },
-  fullBleed:    { label: "Full Bleed",   description: "Photo fills canvas · gradient overlay",         dark: true  },
-  bottomPhoto:  { label: "Bottom Photo", description: "Blue top · photo bottom with curved edge",      dark: true  },
-  sideOverlay:  { label: "Side Overlay", description: "Solid blue bar left · aqua accent line",       dark: true  },
+  fullBleed:    { label: "Full Bleed",   description: "Photo fills canvas · gradient overlay",          dark: true  },
+  bottomPhoto:  { label: "Bottom Photo", description: "Blue top · photo bottom with curved edge",       dark: true  },
+  sideOverlay:  { label: "Side Overlay", description: "Solid blue bar left · aqua accent line",        dark: true  },
 };
 
 // ─── COVER-FIT HELPER ────────────────────────────────────────
-function coverFit(img, zoneW, zoneH, yBias=0.33) {
+// Crops image to fill a zone without stretching
+function coverFit(img, zoneW, zoneH, yBias = 0.33) {
   const ir = img.width / img.height, zr = zoneW / zoneH;
   let sx, sy, sw, sh;
-  if (ir > zr) { sh = img.height; sw = sh*zr; sx = (img.width-sw)/2; sy = 0; }
-  else          { sw = img.width;  sh = sw/zr; sx = 0; sy = (img.height-sh)*yBias; }
+  if (ir > zr) { sh = img.height; sw = sh * zr; sx = (img.width - sw) / 2; sy = 0; }
+  else         { sw = img.width;  sh = sw / zr; sx = 0; sy = (img.height - sh) * yBias; }
   return { sx, sy, sw, sh };
 }
 
-// ─── STYLE 1 — AQUA BLOB (white bg, blob top-right, photo right, curved white panel) ─
+// ─── STYLE 1 — AQUA BLOB ─────────────────────────────────────
+// White bg, aqua blob top-right, photo right, curved white panel left
 function drawAquaBlob(ctx, width, height, bgImage) {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, width, height);
-
-  // Aqua blob top-right
   ctx.save();
   ctx.fillStyle = BRAND.aqua;
   ctx.beginPath();
@@ -63,53 +56,61 @@ function drawAquaBlob(ctx, width, height, bgImage) {
   ctx.closePath();
   ctx.fill();
   ctx.restore();
-
-  // Photo — right ~64%, full height
   if (bgImage) {
-    const px = width*0.36, pw = width-px;
-    const {sx,sy,sw,sh} = coverFit(bgImage, pw, height);
-    ctx.drawImage(bgImage, sx,sy,sw,sh, px,0,pw,height);
+    const px = width * 0.36, pw = width - px;
+    const { sx, sy, sw, sh } = coverFit(bgImage, pw, height);
+    ctx.drawImage(bgImage, sx, sy, sw, sh, px, 0, pw, height);
   }
-
-  // White curved left panel
   ctx.save();
   ctx.fillStyle = "#FFFFFF";
   ctx.beginPath();
-  ctx.moveTo(0,0); ctx.lineTo(width*0.50,0);
-  ctx.bezierCurveTo(width*0.58,height*0.22, width*0.58,height*0.68, width*0.48,height);
-  ctx.lineTo(0,height); ctx.closePath(); ctx.fill();
+  ctx.moveTo(0, 0); ctx.lineTo(width * 0.50, 0);
+  ctx.bezierCurveTo(width*0.58, height*0.22, width*0.58, height*0.68, width*0.48, height);
+  ctx.lineTo(0, height); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 
-// ─── STYLE 2 — DARK SPLIT (deep blue curved left, photo bleeds right) ────────────────
+// ─── STYLE 2 — DARK SPLIT ────────────────────────────────────
+// Photo fills LEFT, deep blue diagonal panel from RIGHT, text on right
 function drawDarkSplit(ctx, width, height, bgImage) {
-  ctx.fillStyle = "#FFFFFF";
+  ctx.fillStyle = BRAND.deepBlue;
   ctx.fillRect(0, 0, width, height);
-
   if (bgImage) {
-    const {sx,sy,sw,sh} = coverFit(bgImage, width, height);
-    ctx.drawImage(bgImage, sx,sy,sw,sh, 0,0,width,height);
+    const pw = width * 0.72;
+    const { sx, sy, sw, sh } = coverFit(bgImage, pw, height, 0.25);
+    ctx.drawImage(bgImage, sx, sy, sw, sh, 0, 0, pw, height);
   }
-
+  // Blue diagonal panel sweeps in from right
   ctx.save();
   ctx.fillStyle = BRAND.deepBlue;
   ctx.beginPath();
-  ctx.moveTo(0,0); ctx.lineTo(width*0.56,0);
-  ctx.bezierCurveTo(width*0.62,height*0.30, width*0.62,height*0.55, width*0.46,height);
-  ctx.lineTo(0,height); ctx.closePath(); ctx.fill();
+  ctx.moveTo(width, 0);
+  ctx.lineTo(width * 0.54, 0);
+  ctx.bezierCurveTo(width * 0.44, height * 0.28, width * 0.50, height * 0.62, width * 0.60, height);
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  // Aqua accent line along the diagonal edge
+  ctx.save();
+  ctx.strokeStyle = BRAND.aqua;
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.54, 0);
+  ctx.bezierCurveTo(width * 0.44, height * 0.28, width * 0.50, height * 0.62, width * 0.60, height);
+  ctx.stroke();
   ctx.restore();
 }
 
-// ─── STYLE 3 — HEX PATTERN (photo top, deep blue bottom, diagonal cut + hex grid) ──
+// ─── STYLE 3 — HEX PATTERN ───────────────────────────────────
+// WHITE top with hex grid + text, diagonal aqua line, photo on BOTTOM
 function drawHexPattern(ctx, width, height, bgImage) {
-  // White base
+  // White base fills everything
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, width, height);
-
   // Diagonal cut — left side lower, right side higher
   const cutLeft  = height * 0.52;
   const cutRight = height * 0.40;
-
   // Photo clips to BOTTOM below the diagonal line
   if (bgImage) {
     const photoH = height - cutRight;
@@ -125,7 +126,6 @@ function drawHexPattern(ctx, width, height, bgImage) {
     ctx.drawImage(bgImage, sx, sy, sw, sh, 0, cutRight, width, photoH);
     ctx.restore();
   }
-
   // Aqua diagonal accent line
   ctx.save();
   ctx.strokeStyle = BRAND.aqua;
@@ -135,7 +135,6 @@ function drawHexPattern(ctx, width, height, bgImage) {
   ctx.lineTo(width, cutRight);
   ctx.stroke();
   ctx.restore();
-
   // Subtle hex grid in the TOP white zone only
   ctx.save();
   ctx.globalAlpha = 0.08;
@@ -163,160 +162,131 @@ function drawHexPattern(ctx, width, height, bgImage) {
   ctx.restore();
 }
 
-// ─── STYLE 4 — FULL BLEED (photo fills canvas, gradient overlay, text bottom-left) ──
+// ─── STYLE 4 — FULL BLEED ────────────────────────────────────
+// Photo fills entire canvas, strong gradient overlay bottom for text
 function drawFullBleed(ctx, width, height, bgImage) {
   ctx.fillStyle = BRAND.deepBlue;
-  ctx.fillRect(0,0,width,height);
-
+  ctx.fillRect(0, 0, width, height);
   if (bgImage) {
-    const {sx,sy,sw,sh} = coverFit(bgImage, width, height, 0.2);
-    ctx.drawImage(bgImage, sx,sy,sw,sh, 0,0,width,height);
+    const { sx, sy, sw, sh } = coverFit(bgImage, width, height, 0.2);
+    ctx.drawImage(bgImage, sx, sy, sw, sh, 0, 0, width, height);
   }
-
-  // Deep blue gradient overlay — strong bottom, fades up
-  const grad = ctx.createLinearGradient(0, height*0.25, 0, height);
-  grad.addColorStop(0, 'rgba(13,45,108,0)');
-  grad.addColorStop(0.45, 'rgba(13,45,108,0.82)');
-  grad.addColorStop(1,   'rgba(13,45,108,0.97)');
+  const grad = ctx.createLinearGradient(0, height * 0.25, 0, height);
+  grad.addColorStop(0,    "rgba(13,45,108,0)");
+  grad.addColorStop(0.45, "rgba(13,45,108,0.82)");
+  grad.addColorStop(1,    "rgba(13,45,108,0.97)");
   ctx.fillStyle = grad;
-  ctx.fillRect(0,0,width,height);
-
-  // Left-side vignette so text stays readable
-  const lGrad = ctx.createLinearGradient(0,0,width*0.6,0);
-  lGrad.addColorStop(0,  'rgba(13,45,108,0.35)');
-  lGrad.addColorStop(1,  'rgba(13,45,108,0)');
+  ctx.fillRect(0, 0, width, height);
+  const lGrad = ctx.createLinearGradient(0, 0, width * 0.6, 0);
+  lGrad.addColorStop(0, "rgba(13,45,108,0.35)");
+  lGrad.addColorStop(1, "rgba(13,45,108,0)");
   ctx.fillStyle = lGrad;
-  ctx.fillRect(0,0,width,height);
+  ctx.fillRect(0, 0, width, height);
 }
 
-// ─── STYLE 5 — BOTTOM PHOTO (deep blue top, photo bottom with curved edge) ──────────
+// ─── STYLE 5 — BOTTOM PHOTO ──────────────────────────────────
+// Deep blue top, photo bottom with S-curve dividing edge
 function drawBottomPhoto(ctx, width, height, bgImage) {
-  // Deep blue fills entire canvas as base
   ctx.fillStyle = BRAND.deepBlue;
-  ctx.fillRect(0,0,width,height);
-
-  // Photo occupies bottom ~62% — more canvas real estate
+  ctx.fillRect(0, 0, width, height);
   const splitY = height * 0.38;
   const photoH = height - splitY;
-
   if (bgImage) {
-    const {sx,sy,sw,sh} = coverFit(bgImage, width, photoH, 0.15);
+    const { sx, sy, sw, sh } = coverFit(bgImage, width, photoH, 0.15);
     ctx.save();
-    // Smooth S-curve clip dividing blue from photo
     ctx.beginPath();
-    ctx.moveTo(0, splitY + height*0.05);
-    ctx.bezierCurveTo(
-      width*0.30, splitY - height*0.06,
-      width*0.70, splitY + height*0.06,
-      width, splitY - height*0.01
-    );
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(bgImage, sx,sy,sw,sh, 0, splitY, width, photoH);
+    ctx.moveTo(0, splitY + height * 0.05);
+    ctx.bezierCurveTo(width*0.30, splitY - height*0.06, width*0.70, splitY + height*0.06, width, splitY - height*0.01);
+    ctx.lineTo(width, height); ctx.lineTo(0, height); ctx.closePath(); ctx.clip();
+    ctx.drawImage(bgImage, sx, sy, sw, sh, 0, splitY, width, photoH);
     ctx.restore();
   }
-
-  // Aqua accent line along the S-curve
   ctx.save();
-  ctx.strokeStyle = BRAND.aqua;
-  ctx.lineWidth = 7;
+  ctx.strokeStyle = BRAND.aqua; ctx.lineWidth = 7;
   ctx.beginPath();
-  ctx.moveTo(0, splitY + height*0.05);
-  ctx.bezierCurveTo(
-    width*0.30, splitY - height*0.06,
-    width*0.70, splitY + height*0.06,
-    width, splitY - height*0.01
-  );
+  ctx.moveTo(0, splitY + height * 0.05);
+  ctx.bezierCurveTo(width*0.30, splitY - height*0.06, width*0.70, splitY + height*0.06, width, splitY - height*0.01);
   ctx.stroke();
   ctx.restore();
 }
 
-// ─── STYLE 6 — SIDE OVERLAY (full photo, solid deep blue bar left ~44%, sharp edge) ─
+// ─── STYLE 6 — SIDE OVERLAY ──────────────────────────────────
+// Photo right, solid deep blue bar left with aqua vertical accent line
 function drawSideOverlay(ctx, width, height, bgImage) {
   ctx.fillStyle = BRAND.deepBlue;
-  ctx.fillRect(0,0,width,height);
-
-  // Photo fills right ~60%, full height — shifted right so faces show
+  ctx.fillRect(0, 0, width, height);
   if (bgImage) {
-    const px = width*0.35, pw = width-px;
-    const {sx,sy,sw,sh} = coverFit(bgImage, pw, height, 0.25);
-    ctx.drawImage(bgImage, sx,sy,sw,sh, px,0,pw,height);
+    const px = width * 0.35, pw = width - px;
+    const { sx, sy, sw, sh } = coverFit(bgImage, pw, height, 0.25);
+    ctx.drawImage(bgImage, sx, sy, sw, sh, px, 0, pw, height);
   }
-
-  // Solid deep blue left panel — sharp straight right edge
   ctx.fillStyle = BRAND.deepBlue;
-  ctx.fillRect(0, 0, width*0.44, height);
-
-  // Aqua vertical accent line on the right edge of the panel
+  ctx.fillRect(0, 0, width * 0.44, height);
   ctx.save();
-  ctx.strokeStyle = BRAND.aqua;
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.moveTo(width*0.44, 0);
-  ctx.lineTo(width*0.44, height);
-  ctx.stroke();
+  ctx.strokeStyle = BRAND.aqua; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(width * 0.44, 0); ctx.lineTo(width * 0.44, height); ctx.stroke();
   ctx.restore();
-
-  // Aqua horizontal strips top and bottom
   ctx.fillStyle = BRAND.aqua;
   ctx.fillRect(0, 0, width, 8);
-  ctx.fillRect(0, height-8, width, 8);
+  ctx.fillRect(0, height - 8, width, 8);
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────
-// ─── MAIN COMPONENT ─────────────────────────────────────────
 export default function ARQBannerGenerator() {
-  const [jobTitle, setJobTitle]       = useState("HR Executive");
-  const [department, setDepartment]   = useState("People & Culture");
-  const [imageUrl, setImageUrl]       = useState("");
-  const [selectedSize, setSelectedSize] = useState("instagram");
+  const [jobTitle, setJobTitle]           = useState("HR Executive");
+  const [imageUrl, setImageUrl]           = useState("");
+  const [selectedSize, setSelectedSize]   = useState("instagram");
   const [selectedStyle, setSelectedStyle] = useState("aquaBlob");
-  const [fontsReady, setFontsReady]   = useState(false);
-  const [imageError, setImageError]   = useState(false);
-  const [imageSource, setImageSource] = useState("");
+  const [fontsReady, setFontsReady]       = useState(false);
+  const [logosReady, setLogosReady]       = useState(false);
+  const [imageError, setImageError]       = useState(false);
+  const [imageSource, setImageSource]     = useState("");
+  const [bgImage, setBgImage]             = useState(null);
 
-  const canvasRef   = useRef(null);
+  const canvasRef    = useRef(null);
   const fileInputRef = useRef(null);
-const [logosReady, setLogosReady] = useState(false);
-const logoColorRef = useRef(null);
-const logoWhiteRef = useRef(null);
+
+  // Logos stored in refs — guaranteed available when draw() runs
+  const logoColorRef = useRef(null);
+  const logoWhiteRef = useRef(null);
+
   // Load Barlow font
   useEffect(() => {
     const link = document.createElement("link");
     link.href = "https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&display=swap";
-    link.rel = "stylesheet";
+    link.rel  = "stylesheet";
     document.head.appendChild(link);
     document.fonts.ready.then(() => setFontsReady(true));
   }, []);
 
-  // Load colour ARQ logo
+  // Load both logos together — draw() only runs when BOTH are ready
   useEffect(() => {
-    const img = new Image();
-    img.onload = () => setLogoImage(img);
-    img.src = LOGO_COLOR_SRC;
+    const loadImg = (src) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload  = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not load: " + src));
+      img.src = src;
+    });
+    Promise.all([loadImg(LOGO_COLOR_SRC), loadImg(LOGO_WHITE_SRC)])
+      .then(([colour, white]) => {
+        logoColorRef.current = colour;
+        logoWhiteRef.current = white;
+        setLogosReady(true);
+      })
+      .catch(err => console.warn("Logo load error:", err));
   }, []);
 
-  // Load white ARQ logo
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setLogoWhite(img);
-    img.src = LOGO_WHITE_SRC;
-  }, []);
-
-  // Load background from URL via CORS proxy
+  // Load background image from URL via CORS proxy
   useEffect(() => {
     if (imageSource !== "url" || !imageUrl.trim()) return;
-    const proxied = "https://corsproxy.io/?" + encodeURIComponent(imageUrl);
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => { setBgImage(img); setImageError(false); };
+    img.onload  = () => { setBgImage(img); setImageError(false); };
     img.onerror = () => { setBgImage(null); setImageError(true); };
-    img.src = proxied;
+    img.src = "https://corsproxy.io/?" + encodeURIComponent(imageUrl);
   }, [imageUrl, imageSource]);
 
-  // Handle file upload
+  // Handle file upload from device
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -336,14 +306,15 @@ const logoWhiteRef = useRef(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ── DRAW ─────────────────────────────────────────────────
+  // ── MAIN DRAW FUNCTION ───────────────────────────────────
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-if (!canvas || !fontsReady || !logosReady) return;
+    // Only draw when fonts AND both logos are fully loaded
+    if (!canvas || !fontsReady || !logosReady) return;
+
     const ctx = canvas.getContext("2d");
     const { width, height } = SIZES[selectedSize];
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = width; canvas.height = height;
     const S = width / 1080;
 
     // 1. Draw background style
@@ -354,49 +325,55 @@ if (!canvas || !fontsReady || !logosReady) return;
     else if (selectedStyle === "bottomPhoto")  drawBottomPhoto(ctx, width, height, bgImage);
     else if (selectedStyle === "sideOverlay")  drawSideOverlay(ctx, width, height, bgImage);
 
-    const isDark    = STYLES[selectedStyle].dark;
-    const textColor = isDark ? BRAND.white : BRAND.deepBlue;
-    const textX     = Math.round(60 * S);
-    const textMaxW  = Math.round(460 * S);
+    const isDark      = STYLES[selectedStyle].dark;
+    const isDarkSplit = selectedStyle === "darkSplit";
+    const textColor   = isDark ? BRAND.white : BRAND.deepBlue;
+    const margin      = Math.round(60 * S);
 
-    // Auto-select white logo on dark backgrounds, colour on light
-    const activeLogo = isDark ? logoWhite : logoImage;
+    // Dark Split: text lives in the blue RIGHT panel
+    // Everything else: text on the LEFT
+    const textX    = isDarkSplit ? Math.round(width * 0.56) : margin;
+    const textMaxW = Math.round(400 * S);
+
+    // 2. Logo — white on dark bg, colour on light bg, read from refs
+    const activeLogo = isDark ? logoWhiteRef.current : logoColorRef.current;
     if (activeLogo) {
-      const logoW = Math.round(220 * S);
-      const logoH = Math.round(logoW / (activeLogo.width / activeLogo.height));
+      const logoW    = Math.round(220 * S);
+      const logoH    = Math.round(logoW / (activeLogo.width / activeLogo.height));
+      const logoTopY = selectedStyle === "fullBleed" ? height * 0.04 : Math.round(55 * S);
       if (selectedStyle === "bottomPhoto") {
-        // Logo sits top-RIGHT to leave full left column for text
-        const logoX = width - textX - logoW;
-        const logoTopY = Math.round(48 * S);
-        ctx.drawImage(activeLogo, logoX, logoTopY, logoW, logoH);
+        // Top-right so it doesn't overlap left-side text
+        ctx.drawImage(activeLogo, width - margin - logoW, Math.round(48 * S), logoW, logoH);
       } else {
-        const logoTopY = selectedStyle === "fullBleed" ? height * 0.04 : Math.round(55 * S);
+        // Aligns with textX — right panel for darkSplit, left for all others
         ctx.drawImage(activeLogo, textX, logoTopY, logoW, logoH);
       }
     }
 
-    // "We are"
+    // 3. "We are"
     const weAreSize = Math.round(54 * S);
-    ctx.font = "700 " + weAreSize + "px " + BRAND.fontFamily + ", sans-serif";
+    ctx.font      = "700 " + weAreSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = textColor;
     ctx.textAlign = "left";
     let weAreYBase = 340;
-    if (selectedStyle === "fullBleed")   weAreYBase = 500;
-    if (selectedStyle === "bottomPhoto") weAreYBase = 145;
-    if (selectedStyle === "sideOverlay") weAreYBase = 300;
+    if (selectedStyle === "fullBleed")    weAreYBase = 500;
+    if (selectedStyle === "bottomPhoto")  weAreYBase = 145;
+    if (selectedStyle === "sideOverlay")  weAreYBase = 300;
+    if (isDarkSplit)                      weAreYBase = 300;
+    if (selectedStyle === "lightPattern") weAreYBase = 160;
     const weAreY = Math.round(weAreYBase * S);
     ctx.fillText("We are", textX, weAreY);
 
-    // "HIRING"
+    // 4. "HIRING" — always aqua
     const hiringSize = Math.round(118 * S);
-    ctx.font = "900 " + hiringSize + "px " + BRAND.fontFamily + ", sans-serif";
+    ctx.font      = "900 " + hiringSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = BRAND.aqua;
     const hiringY = weAreY + Math.round(108 * S);
     ctx.fillText("HIRING", textX, hiringY);
 
-    // Job title — word wrap
+    // 5. Job title with word wrap
     const titleSize = Math.round(38 * S);
-    ctx.font = "600 " + titleSize + "px " + BRAND.fontFamily + ", sans-serif";
+    ctx.font      = "600 " + titleSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = textColor;
     const words = jobTitle.split(" ");
     const titleLines = [];
@@ -412,19 +389,17 @@ if (!canvas || !fontsReady || !logosReady) return;
       ctx.fillText(line, textX, titleY + i * Math.round(titleSize * 1.25));
     });
 
-    // "APPLY NOW ON:"
+    // 6. CTA
     const ctaTopY = titleY + titleLines.length * Math.round(titleSize * 1.25) + Math.round(48 * S);
     const ctaSize = Math.round(26 * S);
-    ctx.font = "700 " + ctaSize + "px " + BRAND.fontFamily + ", sans-serif";
+    ctx.font      = "700 " + ctaSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = textColor;
     ctx.fillText("APPLY NOW ON:", textX, ctaTopY);
-
-    // Email
-    ctx.font = "400 " + ctaSize + "px " + BRAND.fontFamily + ", sans-serif";
+    ctx.font      = "400 " + ctaSize + "px " + BRAND.fontFamily + ", sans-serif";
     ctx.fillStyle = BRAND.aqua;
     ctx.fillText("hr@arqgroup.com", textX, ctaTopY + Math.round(ctaSize * 1.5));
 
-  }, [selectedSize, selectedStyle, bgImage, logoImage, logoWhite, jobTitle, department, fontsReady]);
+  }, [selectedSize, selectedStyle, bgImage, jobTitle, fontsReady, logosReady]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -434,26 +409,21 @@ if (!canvas || !fontsReady || !logosReady) return;
     if (!canvas) return;
     try {
       const safeTitle = jobTitle.replace(/[^a-zA-Z0-9]/g, "_");
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = "ARQ_" + safeTitle + "_" + SIZES[selectedSize].label + ".png";
+      const dataUrl   = canvas.toDataURL("image/png");
+      const link      = document.createElement("a");
+      link.download   = "ARQ_" + safeTitle + "_" + SIZES[selectedSize].label + ".png";
       link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
     } catch (e) {
-      const canvas2 = canvasRef.current;
-      const dataUrl = canvas2.toDataURL("image/png");
       const win = window.open();
-      if (win) win.document.write('<img src="' + dataUrl + '" style="max-width:100%"/>');
+      if (win) win.document.write('<img src="' + canvasRef.current.toDataURL("image/png") + '" style="max-width:100%"/>');
     }
   };
 
   // ── PREVIEW SCALE ────────────────────────────────────────
-  const size = SIZES[selectedSize];
-  const maxPreviewW = 460;
-  const scale = maxPreviewW / size.width;
-  const previewW = size.width * scale;
+  const size     = SIZES[selectedSize];
+  const scale    = 460 / size.width;
+  const previewW = size.width  * scale;
   const previewH = size.height * scale;
 
   // ── RENDER ───────────────────────────────────────────────
@@ -474,7 +444,6 @@ if (!canvas || !fontsReady || !logosReady) return;
         {/* ── Controls ── */}
         <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: 22, border: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 4 }}>
 
-          {/* Platform */}
           <div style={labelStyle}>Platform</div>
           <div style={{ display: "flex", gap: 5, marginBottom: 16, flexWrap: "wrap" }}>
             {Object.entries(SIZES).map(([key, s]) => (
@@ -485,7 +454,6 @@ if (!canvas || !fontsReady || !logosReady) return;
             ))}
           </div>
 
-          {/* Style */}
           <div style={labelStyle}>Background Style</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 16 }}>
             {Object.entries(STYLES).map(([key, s]) => (
@@ -496,26 +464,25 @@ if (!canvas || !fontsReady || !logosReady) return;
             ))}
           </div>
 
-          {/* Job Title */}
           <div style={labelStyle}>Job Title</div>
           <input type="text" value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="e.g. HR Executive" style={inputStyle} />
 
-          {/* Background Photo */}
           <div style={labelStyle}>Background Photo</div>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: "none" }} />
           <button onClick={() => fileInputRef.current.click()} style={{ ...inputStyle, cursor: "pointer", textAlign: "left", background: imageSource === "upload" ? "rgba(0,205,239,0.1)" : "rgba(255,255,255,0.05)", border: imageSource === "upload" ? "1px solid " + BRAND.aqua : "1px solid rgba(255,255,255,0.1)", color: imageSource === "upload" ? BRAND.aqua : "rgba(255,255,255,0.4)", marginBottom: 6 }}>
             {imageSource === "upload" ? "✓ Image uploaded" : "⬆ Upload from device"}
           </button>
+
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.07)" }} />
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>OR</span>
             <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.07)" }} />
           </div>
+
           <input type="text" value={imageUrl} onChange={e => { setImageUrl(e.target.value); setImageSource("url"); if (!e.target.value) clearImage(); }} placeholder="Paste an image URL" style={{ ...inputStyle, border: imageError ? "1px solid #ff6b6b" : imageSource === "url" ? "1px solid " + BRAND.aqua : "1px solid rgba(255,255,255,0.1)" }} />
           {imageError && <p style={{ color: "#ff6b6b", fontSize: 11, margin: "-4px 0 8px" }}>Could not load — try uploading directly.</p>}
           {bgImage && <button onClick={clearImage} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 11, cursor: "pointer", marginBottom: 10, padding: 0, textDecoration: "underline", textAlign: "left" }}>✕ Remove image</button>}
 
-          {/* Download */}
           <button onClick={handleDownload} style={{ marginTop: 8, padding: "13px 0", borderRadius: 9, border: "none", background: "linear-gradient(135deg," + BRAND.aqua + "," + BRAND.green + ")", color: BRAND.deepBlue, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Barlow', sans-serif", letterSpacing: "0.3px" }}>
             ↓ Download {SIZES[selectedSize].label} PNG
           </button>
@@ -536,5 +503,5 @@ if (!canvas || !fontsReady || !logosReady) return;
 }
 
 const labelStyle = { fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 6 };
-const inputStyle = { width: "100%", padding: "9px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, fontFamily: "\'Barlow\', sans-serif", marginBottom: 14, outline: "none", boxSizing: "border-box" };
-const chipStyle  = { padding: "7px 12px", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "\'Barlow\', sans-serif", transition: "all 0.15s" };
+const inputStyle = { width: "100%", padding: "9px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, fontFamily: "'Barlow', sans-serif", marginBottom: 14, outline: "none", boxSizing: "border-box" };
+const chipStyle  = { padding: "7px 12px", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Barlow', sans-serif", transition: "all 0.15s" };
