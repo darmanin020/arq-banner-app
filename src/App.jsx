@@ -31,7 +31,7 @@ const SIZES = {
 const STYLES = {
   aquaBlob:     { label: "Aqua Blob",    description: "White bg · aqua blob top-right · curved panel", dark: false },
   darkSplit:    { label: "Dark Split",   description: "Deep blue left panel · photo bleeds right",     dark: true  },
-  lightPattern: { label: "Hex Pattern",  description: "White bg · aqua hex grid · photo right",        dark: false },
+  lightPattern: { label: "Hex Pattern",  description: "White bg · hex grid top · photo bottom",         dark: false },
   fullBleed:    { label: "Full Bleed",   description: "Photo fills canvas · gradient overlay",         dark: true  },
   bottomPhoto:  { label: "Bottom Photo", description: "Blue top · photo bottom with curved edge",      dark: true  },
   sideOverlay:  { label: "Side Overlay", description: "Solid blue bar left · aqua accent line",       dark: true  },
@@ -102,55 +102,58 @@ function drawDarkSplit(ctx, width, height, bgImage) {
 
 // ─── STYLE 3 — HEX PATTERN (photo top, deep blue bottom, diagonal cut + hex grid) ──
 function drawHexPattern(ctx, width, height, bgImage) {
-  // Deep blue base
-  ctx.fillStyle = BRAND.deepBlue;
+  // White base
+  ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, width, height);
 
-  // Photo fills top portion, clipped by a diagonal cut (top-left higher, bottom-right lower)
-  const cutTopLeft  = height * 0.50;
-  const cutBotRight = height * 0.65;
+  // Diagonal cut — left side lower, right side higher
+  const cutLeft  = height * 0.52;
+  const cutRight = height * 0.40;
+
+  // Photo clips to BOTTOM below the diagonal line
   if (bgImage) {
-    const photoH = cutBotRight;
-    const {sx,sy,sw,sh} = coverFit(bgImage, width, photoH, 0.25);
+    const photoH = height - cutRight;
+    const { sx, sy, sw, sh } = coverFit(bgImage, width, photoH, 0.20);
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(width, 0);
-    ctx.lineTo(width, cutBotRight);
-    ctx.lineTo(0, cutTopLeft);
+    ctx.moveTo(0, cutLeft);
+    ctx.lineTo(width, cutRight);
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(bgImage, sx, sy, sw, sh, 0, 0, width, photoH);
+    ctx.drawImage(bgImage, sx, sy, sw, sh, 0, cutRight, width, photoH);
     ctx.restore();
   }
 
-  // Aqua diagonal accent line along the cut
+  // Aqua diagonal accent line
   ctx.save();
   ctx.strokeStyle = BRAND.aqua;
   ctx.lineWidth = 7;
   ctx.beginPath();
-  ctx.moveTo(0, cutTopLeft);
-  ctx.lineTo(width, cutBotRight);
+  ctx.moveTo(0, cutLeft);
+  ctx.lineTo(width, cutRight);
   ctx.stroke();
   ctx.restore();
 
-  // Hex grid in the blue bottom zone — subtle background texture
+  // Subtle hex grid in the TOP white zone only
   ctx.save();
-  ctx.globalAlpha = 0.10;
+  ctx.globalAlpha = 0.08;
   ctx.strokeStyle = BRAND.aqua;
   ctx.lineWidth = 2;
   const hexSize = width * 0.048;
-  const gridStartY = cutTopLeft + height * 0.04;
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 8; col++) {
+  const gridStartY = height * 0.02;
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 9; col++) {
       const hx = col * hexSize * 1.78 + (row % 2 === 0 ? 0 : hexSize * 0.89) - hexSize;
       const hy = gridStartY + row * hexSize * 1.55;
-      if (hy < height + hexSize) {
+      if (hy < cutLeft) {
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
           const a = (Math.PI / 3) * i - Math.PI / 6;
-          i === 0 ? ctx.moveTo(hx + hexSize*Math.cos(a), hy + hexSize*Math.sin(a))
-                  : ctx.lineTo(hx + hexSize*Math.cos(a), hy + hexSize*Math.sin(a));
+          i === 0
+            ? ctx.moveTo(hx + hexSize * Math.cos(a), hy + hexSize * Math.sin(a))
+            : ctx.lineTo(hx + hexSize * Math.cos(a), hy + hexSize * Math.sin(a));
         }
         ctx.closePath();
         ctx.stroke();
