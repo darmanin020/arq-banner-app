@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const LOGO_COLOR_SRC = "/arq-logo-colour.png.png";
-const LOGO_WHITE_SRC = "/arq-logo-white.png.png";
+const LOGO_COLOR_SRC = "/arq-logo-colour.png";
+const LOGO_WHITE_SRC = "/arq-logo-white.png";
 
 // ─── BRAND CONSTANTS ────────────────────────────────────────
 const BRAND = {
