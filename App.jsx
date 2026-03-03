@@ -17,8 +17,8 @@ const BRAND = {
 //
 // IMPORTANT: Your actual filenames have double extensions (.png.png).
 // If you renamed them, update these paths to match.
-const LOGO_COLOR_SRC = "/arq-logo-colour.png.png";
-const LOGO_WHITE_SRC = "/arq-logo-white.png.png";
+const LOGO_COLOR_SRC = "/arq-logo-colour.png";
+const LOGO_WHITE_SRC = "/arq-logo-white.png";
 
 // ─── SIZE PRESETS ────────────────────────────────────────────
 // Each platform has specific optimal dimensions for feed posts
@@ -488,13 +488,15 @@ export default function ARQBannerGenerator() {
     ctx.fillStyle = textColor;
     ctx.textAlign = "left";
 
-    // Each style has a different ideal Y position to avoid overlapping the logo
+    // Each style has a different ideal Y position to avoid overlapping the logo.
+    // The logo is ~150px tall (at 1080w) and starts at Y=55, ending around Y=205.
+    // So "We are" must start no earlier than ~260 to have breathing room.
     let weAreYBase = 340;  // default for aquaBlob
-    if (selectedStyle === "fullBleed")    weAreYBase = 500;
-    if (selectedStyle === "bottomPhoto")  weAreYBase = 145;
-    if (selectedStyle === "sideOverlay")  weAreYBase = 300;
-    if (selectedStyle === "darkSplit")    weAreYBase = 300;
-    if (selectedStyle === "lightPattern") weAreYBase = 240;
+    if (selectedStyle === "fullBleed")    weAreYBase = 550;
+    if (selectedStyle === "bottomPhoto")  weAreYBase = 280;
+    if (selectedStyle === "sideOverlay")  weAreYBase = 340;
+    if (selectedStyle === "darkSplit")    weAreYBase = 340;
+    if (selectedStyle === "lightPattern") weAreYBase = 340;
 
     const weAreY = Math.round(weAreYBase * S);
     ctx.fillText("We are", textX, weAreY);
